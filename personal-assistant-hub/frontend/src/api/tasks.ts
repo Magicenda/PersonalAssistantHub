@@ -1,0 +1,67 @@
+import client from './client';
+
+export interface Project {
+  id: number;
+  name: string;
+  color: string;
+  description?: string;
+  created_at: string;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in_progress' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  project?: number;
+  project_name?: string;
+  project_color?: string;
+  deadline?: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface Habit {
+  id: number;
+  title: string;
+  description?: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  streak: number;
+  color: string;
+  icon?: string;
+  created_at: string;
+  completed_dates: string[];
+}
+
+export const tasksApi = {
+  getProjects: () =>
+    client.get<Project[]>('/tasks/api/projects'),
+
+  createProject: (data: Partial<Project>) =>
+    client.post<Project>('/tasks/api/projects', data),
+
+  getTasks: (params?: { status?: string; priority?: string; project?: number; search?: string }) =>
+    client.get<Task[]>('/tasks/api/tasks', { params }),
+
+  createTask: (data: Partial<Task>) =>
+    client.post<Task>('/tasks/api/tasks', data),
+
+  updateTask: (id: number, data: Partial<Task>) =>
+    client.patch<Task>(`/tasks/api/tasks/${id}`, data),
+
+  deleteTask: (id: number) =>
+    client.delete(`/tasks/api/tasks/${id}`),
+
+  getHabits: () =>
+    client.get<Habit[]>('/tasks/api/habits'),
+
+  createHabit: (data: Partial<Habit>) =>
+    client.post<Habit>('/tasks/api/habits', data),
+
+  updateHabit: (id: number, data: Partial<Habit>) =>
+    client.patch<Habit>(`/tasks/api/habits/${id}`, data),
+
+  completeHabit: (id: number) =>
+    client.post<Habit>(`/tasks/api/habits/${id}/complete`),
+};

@@ -1,0 +1,200 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: personal_assistant_hub
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_secret_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d personal_assistant_hub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      FINANCE_SERVICE_URL: http://finance-service:8002
+      TASKS_SERVICE_URL: http://tasks-service:8003
+      NOTIFICATION_SERVICE_URL: http://notification-service:8004
+      INTEGRATION_SERVICE_URL: http://integration-service:8005
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+      REDIS_URL: redis://redis:6379/1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  finance-service:
+    build:
+      context: ./finance-service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      REDIS_URL: redis://redis:6379/2
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  tasks-service:
+    build:
+      context: ./tasks-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      REDIS_URL: redis://redis:6379/3
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      REDIS_URL: redis://redis:6379/4
+      CELERY_BROKER_URL: redis://redis:6379/5
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  integration-service:
+    build:
+      context: ./integration-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      REDIS_URL: redis://redis:6379/6
+      CELERY_BROKER_URL: redis://redis:6379/5
+      FINANCE_SERVICE_URL: http://finance-service:8002
+      TASKS_SERVICE_URL: http://tasks-service:8003
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - api-gateway
+    restart: always
+
+  celery-worker:
+    build:
+      context: ./integration-service
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      REDIS_URL: redis://redis:6379/6
+      CELERY_BROKER_URL: redis://redis:6379/5
+      FINANCE_SERVICE_URL: http://finance-service:8002
+      TASKS_SERVICE_URL: http://tasks-service:8003
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  celery-beat:
+    build:
+      context: ./integration-service
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
+      REDIS_URL: redis://redis:6379/6
+      CELERY_BROKER_URL: redis://redis:6379/5
+      FINANCE_SERVICE_URL: http://finance-service:8002
+      TASKS_SERVICE_URL: http://tasks-service:8003
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
+      JWT_ALGORITHM: HS256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+volumes:
+  postgres_data:
