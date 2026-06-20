@@ -56,7 +56,7 @@ export default function Tasks() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [addDialog, setAddDialog] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'medium' as Task['priority'] });
+  const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'medium' as Task['priority'], deadline: '' });
   const [editDialog, setEditDialog] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
 
@@ -86,9 +86,14 @@ export default function Tasks() {
   const handleAddTask = async () => {
     if (!newTask.title.trim()) return;
     try {
-      await tasksApi.createTask(newTask);
+      await tasksApi.createTask({
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        deadline: newTask.deadline || undefined,
+      });
       setAddDialog(false);
-      setNewTask({ title: '', description: '', priority: 'medium' });
+      setNewTask({ title: '', description: '', priority: 'medium', deadline: '' });
       fetchTasks();
     } catch {}
   };
@@ -106,6 +111,7 @@ export default function Tasks() {
         description: editTask.description,
         priority: editTask.priority,
         status: editTask.status,
+        deadline: editTask.deadline || undefined,
       });
       setEditDialog(false);
       setEditTask(null);
@@ -300,6 +306,14 @@ export default function Tasks() {
                 <MenuItem value="urgent">Срочно</MenuItem>
               </Select>
             </FormControl>
+            <TextField
+              label="Дедлайн"
+              type="date"
+              fullWidth
+              value={newTask.deadline}
+              onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
           </Box>
         </DialogContent>
         <DialogActions>
@@ -351,6 +365,14 @@ export default function Tasks() {
                 <MenuItem value="done">DONE</MenuItem>
               </Select>
             </FormControl>
+            <TextField
+              label="Дедлайн"
+              type="date"
+              fullWidth
+              value={editTask?.deadline?.slice(0, 10) || ''}
+              onChange={(e) => setEditTask(editTask ? { ...editTask, deadline: e.target.value } : null)}
+              InputLabelProps={{ shrink: true }}
+            />
           </Box>
         </DialogContent>
         <DialogActions>

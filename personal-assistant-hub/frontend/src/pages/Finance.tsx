@@ -77,6 +77,10 @@ export default function Finance() {
   const [editTxDialog, setEditTxDialog] = useState(false);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
 
+  const [catDialog, setCatDialog] = useState(false);
+  const [catForm, setCatForm] = useState({ name: '', type: 'expense' as 'income' | 'expense', color: '#2563EB' });
+  const [catFilter, setCatFilter] = useState<'all' | 'income' | 'expense'>('all');
+
   const getCategoryName = (catId: number) => categories.find(c => c.id === catId)?.name || 'Без категории';
 
   const fetchData = () => {
@@ -176,6 +180,15 @@ export default function Finance() {
       });
       setEditTxDialog(false);
       setEditTx(null);
+      fetchData();
+    } catch {}
+  };
+
+  const handleAddCategory = async () => {
+    if (!catForm.name.trim()) return;
+    try {
+      await financeApi.createCategory({ name: catForm.name, type: catForm.type, color: catForm.color });
+      setCatForm({ name: '', type: 'expense', color: '#2563EB' });
       fetchData();
     } catch {}
   };
@@ -296,6 +309,9 @@ export default function Finance() {
               />
               <Button variant="contained" startIcon={<Add />} size="small" onClick={() => setTxDialog(true)}>
                 Добавить
+              </Button>
+              <Button variant="outlined" startIcon={<Category />} size="small" onClick={() => setCatDialog(true)}>
+                Категории
               </Button>
             </Box>
             <TableContainer>
@@ -672,6 +688,55 @@ export default function Finance() {
         <DialogActions>
           <Button onClick={() => setEditTxDialog(false)}>Отмена</Button>
           <Button variant="contained" onClick={handleEditTx}>Сохранить</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={catDialog} onClose={() => setCatDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Управление категориями</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <Button size="small" variant={catFilter === 'all' ? 'contained' : 'outlined'} onClick={() => setCatFilter('all')}>Все</Button>
+            <Button size="small" variant={catFilter === 'income' ? 'contained' : 'outlined'} onClick={() => setCatFilter('income')}>Доходы</Button>
+            <Button size="small" variant={catFilter === 'expense' ? 'contained' : 'outlined'} onClick={() => setCatFilter('expense')}>Расходы</Button>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3, maxHeight: 240, overflow: 'auto' }}>
+            {categories
+              .filter((c) => catFilter === 'all' || c.type === catFilter)
+              .map((c) => (
+                <Box key={c.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, borderRadius: 1, bgcolor: 'rgba(148,163,184,0.05)' }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: c.color || '#2563EB' }} />
+                  <Typography variant="body2" sx={{ flex: 1 }}>{c.name}</Typography>
+                  <Chip label={c.type === 'income' ? 'Доход' : 'Расход'} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                </Box>
+              ))}
+            {categories.length === 0 && (
+              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                Нет категорий
+              </Typography>
+            )}
+          </Box>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Новая категория</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <TextField label="Название" size="small" value={catForm.name}
+              onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} />
+            <Select size="small" value={catForm.type} onChange={(e) => setCatForm({ ...catForm, type: e.target.value as 'income' | 'expense' })}>
+              <MenuItem value="expense">Расход</MenuItem>
+              <MenuItem value="income">Доход</MenuItem>
+            </Select>
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              {['#2563EB','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#F97316'].map((color) => (
+                <Box key={color} onClick={() => setCatForm({ ...catForm, color })}
+                  sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: color, cursor: 'pointer',
+                    border: catForm.color === color ? '2px solid #fff' : '2px solid transparent' }} />
+              ))}
+            </Box>
+            <Button variant="contained" size="small" onClick={handleAddCategory} disabled={!catForm.name.trim()}>
+              Добавить
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCatDialog(false)}>Закрыть</Button>
         </DialogActions>
       </Dialog>
     </motion.div>

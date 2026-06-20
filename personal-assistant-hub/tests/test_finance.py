@@ -67,7 +67,7 @@ async def client() -> AsyncGenerator:
 
 async def test_create_account(client: AsyncClient):
     response = await client.post("/api/accounts", json={
-        "name": "Test Bank", "type": "Bank", "balance": 1000.00, "currency": "USD",
+        "name": "Test Bank", "type": "bank", "balance": 1000.00, "currency": "USD",
     })
     assert response.status_code in (200, 201)
     assert response.json()["name"] == "Test Bank"
@@ -75,28 +75,28 @@ async def test_create_account(client: AsyncClient):
 
 
 async def test_list_accounts(client: AsyncClient):
-    await client.post("/api/accounts", json={"name": "Cash", "type": "Cash", "balance": 500})
-    await client.post("/api/accounts", json={"name": "Bank", "type": "Bank", "balance": 2000})
+    await client.post("/api/accounts", json={"name": "Cash", "type": "cash", "balance": 500})
+    await client.post("/api/accounts", json={"name": "Bank", "type": "bank", "balance": 2000})
     response = await client.get("/api/accounts")
     assert response.status_code == 200
     assert len(response.json()) >= 2
 
 
 async def test_create_transaction_updates_balance(client: AsyncClient):
-    acct = await client.post("/api/accounts", json={"name": "Wallet", "type": "Cash", "balance": 1000})
+    acct = await client.post("/api/accounts", json={"name": "Wallet", "type": "cash", "balance": 1000})
     acct_id = acct.json()["id"]
     cat = await client.post("/api/categories", json={"name": "Food", "type": "Expense"})
     cat_id = cat.json()["id"]
     await client.post("/api/transactions", json={
         "account_id": acct_id, "category_id": cat_id, "amount": 50.00,
-        "description": "Lunch", "transaction_type": "Expense", "date": str(date.today()),
+        "description": "Lunch", "transaction_type": "expense", "date": str(date.today()),
     })
     acct_resp = await client.get(f"/api/accounts/{acct_id}")
     assert float(acct_resp.json()["balance"]) == 950.00
 
 
 async def test_budget_progress_calculation(client: AsyncClient):
-    acct = await client.post("/api/accounts", json={"name": "Wallet", "type": "Cash", "balance": 5000})
+    acct = await client.post("/api/accounts", json={"name": "Wallet", "type": "cash", "balance": 5000})
     cat = await client.post("/api/categories", json={"name": "Food", "type": "Expense"})
     budget = await client.post("/api/budgets", json={
         "category_id": cat.json()["id"], "limit_amount": 1000, "period": "monthly",
@@ -104,7 +104,7 @@ async def test_budget_progress_calculation(client: AsyncClient):
     budget_id = budget.json()["id"]
     await client.post("/api/transactions", json={
         "account_id": acct.json()["id"], "category_id": cat.json()["id"],
-        "amount": 300, "description": "Groceries", "transaction_type": "Expense",
+        "amount": 300, "description": "Groceries", "transaction_type": "expense",
         "date": str(date.today()),
     })
     resp = await client.get(f"/api/budgets/{budget_id}")
