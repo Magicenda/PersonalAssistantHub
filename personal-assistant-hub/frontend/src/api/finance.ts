@@ -73,6 +73,9 @@ export const financeApi = {
   createCategory: (data: Partial<Category>) =>
     client.post<Category>('/finance/api/categories', data),
 
+  updateCategory: (id: number, data: Partial<Category>) =>
+    client.put<Category>(`/finance/api/categories/${id}`, data),
+
   getTransactions: (params?: { page?: number; account?: number; category?: number; start_date?: string; end_date?: string }) =>
     client.get<Transaction[]>('/finance/api/transactions', { params }),
 
@@ -92,5 +95,11 @@ export const financeApi = {
     client.get<FinanceReport>('/finance/api/reports/dashboard', { params }),
 
   getBalanceHistory: (params?: { days?: number }) =>
-    client.get<{ date: string; balance: number }[]>('/finance/api/balance-history', { params }),
+    client.get<{ date: string; balance: number }[]>('/finance/api/reports/balance-history', { params }),
+
+  getCategoryBreakdown: (params?: { year?: number; month?: number }) =>
+    client.get<{ category: string; amount: number; percentage: number }[]>('/finance/api/reports/category-breakdown', { params }),
+
+  getMonthlyTrends: (params?: { months?: number }) =>
+    client.get<{ month: string; income: number; expenses: number }[]>('/finance/api/reports/monthly-trends', { params }),
 };

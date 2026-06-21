@@ -10,13 +10,28 @@ from app.schemas import HabitCreate, HabitUpdate, HabitResponse, HabitLogRespons
 router = APIRouter(prefix="/api/habits", tags=["habits"])
 
 
+async def _enrich_habit_completed_dates(db: AsyncSession, habit: Habit):
+    """Populate completed_dates on a Habit ORM object."""
+    logs = await db.execute(
+        select(HabitLog.completed_date).where(
+            HabitLog.habit_id == habit.id,
+            HabitLog.user_id == habit.user_id,
+        ).order_by(HabitLog.completed_date)
+    )
+    habit.completed_dates = [str(row[0]) for row in logs.fetchall()]
+    return habit
+
+
 @router.get("", response_model=list[HabitResponse])
 async def list_habits(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Habit).where(Habit.user_id == user_id).order_by(Habit.created_at))
-    return result.scalars().all()
+    habits = result.scalars().all()
+    for habit in habits:
+        await _enrich_habit_completed_dates(db, habit)
+    return habits
 
 
 @router.post("", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
@@ -35,6 +50,7 @@ async def create_habit(
     db.add(habit)
     await db.commit()
     await db.refresh(habit)
+    await _enrich_habit_completed_dates(db, habit)
     return habit
 
 
@@ -48,6 +64,7 @@ async def get_habit(
     habit = result.scalar_one_or_none()
     if not habit:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
+    await _enrich_habit_completed_dates(db, habit)
     return habit
 
 
@@ -69,6 +86,7 @@ async def update_habit(
         setattr(habit, key, value)
     await db.commit()
     await db.refresh(habit)
+    await _enrich_habit_completed_dates(db, habit)
     return habit
 
 
@@ -82,6 +100,9 @@ async def delete_habit(
     habit = result.scalar_one_or_none()
     if not habit:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
+
+    # Delete habit logs first to avoid FK violation
+    await db.execute(HabitLog.__table__.delete().where(HabitLog.habit_id == habit_id))
     await db.delete(habit)
     await db.commit()
 
@@ -113,15 +134,16 @@ async def log_habit(
     db.add(log)
 
     prev_completed = habit.last_completed
+    freq = habit.frequency.upper() if habit.frequency else "DAILY"
 
-    if habit.frequency == "daily":
+    if freq == "DAILY":
         if prev_completed and (now - prev_completed).days <= 1:
             habit.streak += 1
         else:
             habit.streak = 1
-    elif habit.frequency == "weekly":
+    elif freq == "WEEKLY":
         habit.streak += 1
-    elif habit.frequency == "monthly":
+    elif freq == "MONTHLY":
         habit.streak += 1
 
     habit.last_completed = now

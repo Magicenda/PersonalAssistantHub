@@ -195,53 +195,53 @@ class BudgetForecast(Base, TimestampMixin):
 
 
 FOOD_DESCRIPTIONS = [
-    "Grocery shopping at Walmart", "Lunch at Subway", "Dinner at Italian restaurant",
-    "Coffee from Starbucks", "Pizza delivery", "Weekly groceries at Trader Joe's",
-    "Sushi dinner", "Breakfast at local cafe", "Mexican takeout", "Thai food delivery",
-    "Burger and fries", "Salad bar lunch", "Bakery items", "Farmers market produce",
-    "Chinese takeout", "Ice cream dessert", "Sandwich shop lunch", "BBQ dinner out",
+    "Продукты в Пятёрочке", "Обед в столовой", "Ужин в ресторане",
+    "Кофе из кофейни", "Доставка пиццы", "Продукты на неделю в Магните",
+    "Суши на ужин", "Завтрак в кафе", "Мексиканская еда на вынос", "Тайская доставка",
+    "Бургер и картошка", "Салат на ланч", "Выпечка из пекарни", "Овощи с рынка",
+    "Китайская еда на вынос", "Мороженое", "Сэндвич на обед", "Шашлык на выезде",
 ]
 
 TRANSPORT_DESCRIPTIONS = [
-    "Gas station fill-up", "Uber ride to work", "Monthly metro pass",
-    "Bus fare", "Taxi from airport", "Parking garage fee",
-    "Car wash", "Tire rotation service", "Oil change", "Train ticket",
+    "Заправка на АЗС", "Поездка на такси", "Проездной на месяц",
+    "Оплата автобуса", "Такси из аэропорта", "Парковка",
+    "Мойка авто", "Шиномонтаж", "Замена масла", "Билет на поезд",
 ]
 
 ENTERTAINMENT_DESCRIPTIONS = [
-    "Netflix subscription", "Movie tickets", "Concert tickets",
-    "Spotify premium", "Streaming service", "Bowling night",
-    "Mini golf outing", "Cinema popcorn & drinks", "Video game purchase",
-    "Board game cafe", "Arcade games", "Theater play tickets",
+    "Подписка Кинопоиск", "Билеты в кино", "Билеты на концерт",
+    "Яндекс Музыка", "Стриминг", "Боулинг",
+    "Гольф-клуб", "Попкорн в кинотеатре", "Игры в Steam",
+    "Настольные игры в антикафе", "Аркадные автоматы", "Билеты в театр",
 ]
 
 UTILITIES_DESCRIPTIONS = [
-    "Electric bill", "Water bill", "Internet service",
-    "Phone plan", "Gas bill", "Trash collection",
+    "Электричество", "Вода", "Интернет",
+    "Телефон", "Газ", "Вывоз мусора",
 ]
 
 SHOPPING_DESCRIPTIONS = [
-    "New running shoes", "Clothes from H&M", "Amazon order",
-    "Electronics accessories", "Home decor", "Kitchen supplies",
-    "Office supplies", "Books from bookstore", "Gardening tools",
-    "Bed sheets and towels", "Backpack", "Winter jacket",
+    "Новые кроссовки", "Одежда в H&M", "Заказ на Ozon",
+    "Аксессуары для электроники", "Декор для дома", "Кухонные принадлежности",
+    "Канцелярия", "Книги", "Инструменты для сада",
+    "Постельное бельё", "Рюкзак", "Зимняя куртка",
 ]
 
 HEALTH_DESCRIPTIONS = [
-    "Pharmacy - vitamins", "Doctor visit copay", "Dental checkup",
-    "Gym membership", "Eye exam", "Prescription refill",
-    "Physical therapy session", "Massage therapy", "Yoga class",
+    "Аптека - витамины", "Приём у врача", "Стоматология",
+    "Абонемент в спортзал", "Проверка зрения", "Лекарства по рецепту",
+    "Физиотерапия", "Массаж", "Йога",
 ]
 
 EDUCATION_DESCRIPTIONS = [
-    "Online course subscription", "Programming books", "Udemy course",
-    "Language learning app", "Workshop registration", "Study materials",
+    "Курсы на Stepik", "Книги по программированию", "Курс на Udemy",
+    "Приложение для изучения языка", "Участие в воркшопе", "Учебные материалы",
 ]
 
-SALARY_DESCRIPTION = "Monthly salary payment"
+SALARY_DESCRIPTION = "Ежемесячная зарплата"
 FREELANCE_DESCRIPTIONS = [
-    "Web development project", "UI/UX design gig", "Consulting call",
-    "Freelance writing", "Code review project", "Technical tutorial",
+    "Веб-разработка", "Дизайн UI/UX", "Консультация",
+    "Написание текстов", "Ревью кода", "Технический туториал",
 ]
 
 
@@ -275,24 +275,24 @@ async def main():
         print(f"  -> User ID: {user_id}")
 
         print("Creating accounts...")
-        cash = Account(user_id=user_id, name="Cash", type=AccountType.CASH, balance=Decimal("500.00"))
-        bank = Account(user_id=user_id, name="Bank Account", type=AccountType.BANK, balance=Decimal("5000.00"))
-        card = Account(user_id=user_id, name="Credit Card", type=AccountType.CARD, balance=Decimal("-200.00"))
+        cash = Account(user_id=user_id, name="Наличные", type=AccountType.CASH, balance=Decimal("500.00"))
+        bank = Account(user_id=user_id, name="Банковский счёт", type=AccountType.BANK, balance=Decimal("5000.00"))
+        card = Account(user_id=user_id, name="Кредитная карта", type=AccountType.CARD, balance=Decimal("-200.00"))
         session.add_all([cash, bank, card])
         await session.flush()
         accounts = {"cash": cash.id, "bank": bank.id, "card": card.id}
         print(f"  -> Cash={cash.id}, Bank={bank.id}, CreditCard={card.id}")
 
         print("Creating categories...")
-        cat_salary = Category(user_id=user_id, name="Salary", type=CategoryType.INCOME, icon="briefcase", color="#10B981")
-        cat_freelance = Category(user_id=user_id, name="Freelance", type=CategoryType.INCOME, icon="laptop", color="#3B82F6")
-        cat_food = Category(user_id=user_id, name="Food", type=CategoryType.EXPENSE, icon="shopping-cart", color="#F59E0B")
-        cat_transport = Category(user_id=user_id, name="Transport", type=CategoryType.EXPENSE, icon="truck", color="#8B5CF6")
-        cat_entertainment = Category(user_id=user_id, name="Entertainment", type=CategoryType.EXPENSE, icon="film", color="#EC4899")
-        cat_utilities = Category(user_id=user_id, name="Utilities", type=CategoryType.EXPENSE, icon="zap", color="#EF4444")
-        cat_shopping = Category(user_id=user_id, name="Shopping", type=CategoryType.EXPENSE, icon="shopping-bag", color="#F97316")
-        cat_health = Category(user_id=user_id, name="Health", type=CategoryType.EXPENSE, icon="heart", color="#14B8A6")
-        cat_education = Category(user_id=user_id, name="Education", type=CategoryType.EXPENSE, icon="book", color="#6366F1")
+        cat_salary = Category(user_id=user_id, name="Зарплата", type=CategoryType.INCOME, icon="briefcase", color="#10B981")
+        cat_freelance = Category(user_id=user_id, name="Фриланс", type=CategoryType.INCOME, icon="laptop", color="#3B82F6")
+        cat_food = Category(user_id=user_id, name="Продукты", type=CategoryType.EXPENSE, icon="shopping-cart", color="#F59E0B")
+        cat_transport = Category(user_id=user_id, name="Транспорт", type=CategoryType.EXPENSE, icon="truck", color="#8B5CF6")
+        cat_entertainment = Category(user_id=user_id, name="Развлечения", type=CategoryType.EXPENSE, icon="film", color="#EC4899")
+        cat_utilities = Category(user_id=user_id, name="Коммунальные", type=CategoryType.EXPENSE, icon="zap", color="#EF4444")
+        cat_shopping = Category(user_id=user_id, name="Покупки", type=CategoryType.EXPENSE, icon="shopping-bag", color="#F97316")
+        cat_health = Category(user_id=user_id, name="Здоровье", type=CategoryType.EXPENSE, icon="heart", color="#14B8A6")
+        cat_education = Category(user_id=user_id, name="Образование", type=CategoryType.EXPENSE, icon="book", color="#6366F1")
         session.add_all([cat_salary, cat_freelance, cat_food, cat_transport, cat_entertainment, cat_utilities, cat_shopping, cat_health, cat_education])
         await session.flush()
         cats = {
@@ -425,9 +425,9 @@ async def main():
         print(f"  -> {len(budgets_data)} budgets created")
 
         print("Creating projects...")
-        proj_personal = Project(user_id=user_id, name="Personal", description="Personal projects and tasks")
-        proj_work = Project(user_id=user_id, name="Work", description="Work-related projects and tasks")
-        proj_health = Project(user_id=user_id, name="Health", description="Health and wellness goals")
+        proj_personal = Project(user_id=user_id, name="Личное", description="Личные проекты и задачи")
+        proj_work = Project(user_id=user_id, name="Работа", description="Рабочие проекты и задачи")
+        proj_health = Project(user_id=user_id, name="Здоровье", description="Цели по здоровью")
         session.add_all([proj_personal, proj_work, proj_health])
         await session.flush()
         projects = {"personal": proj_personal.id, "work": proj_work.id, "health": proj_health.id}
@@ -435,45 +435,45 @@ async def main():
 
         print("Creating 20+ tasks...")
         tasks_data = [
-            ("Plan weekend trip", TaskPriority.LOW, TaskStatus.TODO, projects["personal"]),
-            ("Organize closet", TaskPriority.MEDIUM, TaskStatus.TODO, projects["personal"]),
-            ("Read 'Atomic Habits'", TaskPriority.LOW, TaskStatus.DONE, projects["personal"]),
-            ("Fix bike tire", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, projects["personal"]),
-            ("Renew passport", TaskPriority.HIGH, TaskStatus.TODO, projects["personal"]),
-            ("Complete Q2 report", TaskPriority.CRITICAL, TaskStatus.IN_PROGRESS, projects["work"]),
-            ("Prepare presentation slides", TaskPriority.HIGH, TaskStatus.TODO, projects["work"]),
-            ("Send weekly status email", TaskPriority.MEDIUM, TaskStatus.DONE, projects["work"]),
-            ("Review team pull requests", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, projects["work"]),
-            ("Update project documentation", TaskPriority.LOW, TaskStatus.TODO, projects["work"]),
-            ("Schedule team meeting", TaskPriority.MEDIUM, TaskStatus.DONE, projects["work"]),
-            ("Code review for feature branch", TaskPriority.HIGH, TaskStatus.TODO, projects["work"]),
-            ("Run daily workout", TaskPriority.HIGH, TaskStatus.DONE, projects["health"]),
-            ("Schedule doctor appointment", TaskPriority.HIGH, TaskStatus.TODO, projects["health"]),
-            ("Meal prep for week", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, projects["health"]),
-            ("Buy vitamins", TaskPriority.LOW, TaskStatus.DONE, projects["health"]),
-            ("Book dental checkup", TaskPriority.MEDIUM, TaskStatus.TODO, projects["health"]),
-            ("Update LinkedIn profile", TaskPriority.LOW, TaskStatus.TODO, None),
-            ("Call parents", TaskPriority.MEDIUM, TaskStatus.DONE, None),
-            ("Pay credit card bill", TaskPriority.CRITICAL, TaskStatus.TODO, None),
-            ("Back up laptop", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, None),
-            ("Plan birthday gift", TaskPriority.LOW, TaskStatus.TODO, None),
+            ("Спланировать поездку", TaskPriority.LOW, TaskStatus.TODO, projects["personal"]),
+            ("Разобрать шкаф", TaskPriority.MEDIUM, TaskStatus.TODO, projects["personal"]),
+            ("Прочитать '7 навыков'", TaskPriority.LOW, TaskStatus.DONE, projects["personal"]),
+            ("Починить велосипед", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, projects["personal"]),
+            ("Обновить паспорт", TaskPriority.HIGH, TaskStatus.TODO, projects["personal"]),
+            ("Доделать Q2 отчёт", TaskPriority.CRITICAL, TaskStatus.IN_PROGRESS, projects["work"]),
+            ("Подготовить слайды", TaskPriority.HIGH, TaskStatus.TODO, projects["work"]),
+            ("Написать еженедельный статус", TaskPriority.MEDIUM, TaskStatus.DONE, projects["work"]),
+            ("Проверить PR команды", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, projects["work"]),
+            ("Обновить документацию", TaskPriority.LOW, TaskStatus.TODO, projects["work"]),
+            ("Назначить совещание", TaskPriority.MEDIUM, TaskStatus.DONE, projects["work"]),
+            ("Code review фичи", TaskPriority.HIGH, TaskStatus.TODO, projects["work"]),
+            ("Утренняя зарядка", TaskPriority.HIGH, TaskStatus.DONE, projects["health"]),
+            ("Записаться к врачу", TaskPriority.HIGH, TaskStatus.TODO, projects["health"]),
+            ("Приготовить еду на неделю", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, projects["health"]),
+            ("Купить витамины", TaskPriority.LOW, TaskStatus.DONE, projects["health"]),
+            ("Записаться к стоматологу", TaskPriority.MEDIUM, TaskStatus.TODO, projects["health"]),
+            ("Обновить LinkedIn", TaskPriority.LOW, TaskStatus.TODO, None),
+            ("Позвонить родителям", TaskPriority.MEDIUM, TaskStatus.DONE, None),
+            ("Оплатить кредитку", TaskPriority.CRITICAL, TaskStatus.TODO, None),
+            ("Бэкап ноутбука", TaskPriority.MEDIUM, TaskStatus.IN_PROGRESS, None),
+            ("Купить подарок на день рождения", TaskPriority.LOW, TaskStatus.TODO, None),
         ]
         for i, (title, priority, status, project_id) in enumerate(tasks_data):
             deadline_date = today + timedelta(days=random.randint(1, 30)) if status == TaskStatus.TODO else None
             session.add(Task(
                 user_id=user_id, project_id=project_id, title=title,
-                description=f"Task: {title}", priority=priority, status=status,
+                description=f"Задача: {title}", priority=priority, status=status,
                 deadline=deadline_date, order_index=i,
             ))
         await session.flush()
         print(f"  -> {len(tasks_data)} tasks created")
 
         print("Creating habits...")
-        habit_drink = Habit(user_id=user_id, title="Drink Water", description="Drink 8 glasses of water daily", frequency=HabitFrequency.DAILY, color="#3B82F6")
-        habit_read = Habit(user_id=user_id, title="Read 30min", description="Read for at least 30 minutes", frequency=HabitFrequency.DAILY, color="#8B5CF6")
-        habit_exercise = Habit(user_id=user_id, title="Exercise", description="Work out for at least 20 minutes", frequency=HabitFrequency.DAILY, color="#10B981")
-        habit_meditate = Habit(user_id=user_id, title="Meditate", description="Meditate for 10 minutes", frequency=HabitFrequency.DAILY, color="#F59E0B")
-        habit_english = Habit(user_id=user_id, title="Learn English", description="Practice English for 15 minutes", frequency=HabitFrequency.DAILY, color="#EC4899")
+        habit_drink = Habit(user_id=user_id, title="Пить воду", description="8 стаканов воды в день", frequency=HabitFrequency.DAILY, color="#3B82F6")
+        habit_read = Habit(user_id=user_id, title="Читать 30 мин", description="Читать минимум 30 минут", frequency=HabitFrequency.DAILY, color="#8B5CF6")
+        habit_exercise = Habit(user_id=user_id, title="Зарядка", description="Заниматься 20 минут", frequency=HabitFrequency.DAILY, color="#10B981")
+        habit_meditate = Habit(user_id=user_id, title="Медитация", description="Медитировать 10 минут", frequency=HabitFrequency.DAILY, color="#F59E0B")
+        habit_english = Habit(user_id=user_id, title="Английский", description="Учить английский 15 минут", frequency=HabitFrequency.DAILY, color="#EC4899")
         session.add_all([habit_drink, habit_read, habit_exercise, habit_meditate, habit_english])
         await session.flush()
         habits = {"drink": habit_drink.id, "read": habit_read.id, "exercise": habit_exercise.id, "meditate": habit_meditate.id, "english": habit_english.id}

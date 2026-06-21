@@ -63,5 +63,8 @@ export const tasksApi = {
     client.patch<Habit>(`/tasks/api/habits/${id}`, data),
 
   completeHabit: (id: number) =>
-    client.post<Habit>(`/tasks/api/habits/${id}/complete`),
+    client.post<Habit>(`/tasks/api/habits/${id}/log`),
+
+  deleteHabit: (id: number) =>
+    client.delete(`/tasks/api/habits/${id}`),
 };

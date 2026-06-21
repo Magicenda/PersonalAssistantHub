@@ -20,7 +20,7 @@ import {
   Chip,
   IconButton,
 } from '@mui/material';
-import { Add, Whatshot, CheckCircleOutline, RadioButtonUnchecked } from '@mui/icons-material';
+import { Add, Whatshot, CheckCircleOutline, RadioButtonUnchecked, Delete } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { tasksApi, type Habit } from '../api/tasks';
 
@@ -48,6 +48,7 @@ export default function Habits() {
   });
   const [editDialog, setEditDialog] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   const fetchHabits = () => {
     setLoading(true);
@@ -92,6 +93,14 @@ export default function Habits() {
       });
       setEditDialog(false);
       setEditHabit(null);
+      fetchHabits();
+    } catch {}
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await tasksApi.deleteHabit(id);
+      setDeleteConfirm(null);
       fetchHabits();
     } catch {}
   };
@@ -161,6 +170,9 @@ export default function Habits() {
                         />
                         <IconButton size="small" onClick={() => handleEditClick(habit)} sx={{ p: 0.3 }}>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>✎</Typography>
+                        </IconButton>
+                        <IconButton size="small" onClick={() => setDeleteConfirm(habit.id)} sx={{ p: 0.3 }}>
+                          <Delete fontSize="small" sx={{ color: 'error.main', fontSize: 16 }} />
                         </IconButton>
                       </Box>
                     </Box>
@@ -333,6 +345,21 @@ export default function Habits() {
         <DialogActions>
           <Button onClick={() => setEditDialog(false)}>Отмена</Button>
           <Button variant="contained" onClick={handleEditSave}>Сохранить</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Удалить привычку?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Это действие нельзя отменить.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirm(null)}>Отмена</Button>
+          <Button variant="contained" color="error" onClick={() => { const id = deleteConfirm; if (id === null) return; setDeleteConfirm(null); tasksApi.deleteHabit(id).then(() => fetchHabits()); }}>
+            Удалить
+          </Button>
         </DialogActions>
       </Dialog>
     </motion.div>

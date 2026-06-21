@@ -65,7 +65,7 @@ class TransactionCreate(BaseModel):
     amount: Decimal
     description: Optional[str] = Field(None, max_length=256)
     transaction_type: TransactionType
-    date: date
+    transaction_date: date = Field(alias="date")
     is_recurring: bool = False
     recurring_day: Optional[int] = Field(None, ge=1, le=31)
 
@@ -76,7 +76,7 @@ class TransactionUpdate(BaseModel):
     amount: Optional[Decimal] = None
     description: Optional[str] = Field(None, max_length=256)
     transaction_type: Optional[TransactionType] = None
-    date: Optional[date] = None
+    transaction_date: Optional[date] = Field(None, alias="date")
     is_recurring: Optional[bool] = None
     recurring_day: Optional[int] = Field(None, ge=1, le=31)
 
@@ -86,6 +86,9 @@ class TransactionResponse(BaseModel):
     user_id: int
     account_id: int
     category_id: Optional[int]
+    category_name: Optional[str] = None
+    category_color: Optional[str] = None
+    account_name: Optional[str] = None
     amount: Decimal
     description: Optional[str]
     transaction_type: TransactionType

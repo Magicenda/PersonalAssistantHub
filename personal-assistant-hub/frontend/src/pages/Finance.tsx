@@ -80,6 +80,7 @@ export default function Finance() {
   const [catDialog, setCatDialog] = useState(false);
   const [catForm, setCatForm] = useState({ name: '', type: 'expense' as 'income' | 'expense', color: '#2563EB' });
   const [catFilter, setCatFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [catEditId, setCatEditId] = useState<number | null>(null);
 
   const getCategoryName = (catId: number) => categories.find(c => c.id === catId)?.name || 'Без категории';
 
@@ -187,8 +188,13 @@ export default function Finance() {
   const handleAddCategory = async () => {
     if (!catForm.name.trim()) return;
     try {
-      await financeApi.createCategory({ name: catForm.name, type: catForm.type, color: catForm.color });
+      if (catEditId !== null) {
+        await financeApi.updateCategory(catEditId, { name: catForm.name, type: catForm.type === 'income' ? 'Income' : 'Expense', color: catForm.color });
+      } else {
+        await financeApi.createCategory({ name: catForm.name, type: catForm.type === 'income' ? 'Income' : 'Expense', color: catForm.color });
+      }
       setCatForm({ name: '', type: 'expense', color: '#2563EB' });
+      setCatEditId(null);
       fetchData();
     } catch {}
   };
@@ -376,8 +382,10 @@ export default function Finance() {
         </Box>
         <Grid container spacing={2}>
           {budgets.map((budget) => {
-            const percent = budget.limit_amount > 0 ? Math.min((budget.spent_amount / budget.limit_amount) * 100, 100) : 0;
-            const isOver = budget.spent_amount > budget.limit_amount;
+            const spent = Number(budget.spent_amount);
+            const limit = Number(budget.limit_amount);
+            const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+            const isOver = spent > limit;
             return (
               <Grid item xs={12} sm={6} md={4} key={budget.id}>
                 <motion.div variants={itemVariants}>
@@ -535,7 +543,7 @@ export default function Finance() {
               displayEmpty
             >
               <MenuItem value="">Без категории</MenuItem>
-              {categories.filter((c) => c.type === txType).map((c) => (
+              {categories.filter((c) => c.type.toLowerCase() === txType).map((c) => (
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </Select>
@@ -606,7 +614,7 @@ export default function Finance() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <Select value={budgetForm.category_id} onChange={(e) => setBudgetForm({ ...budgetForm, category_id: e.target.value })} size="small" fullWidth displayEmpty>
               <MenuItem value="" disabled>Выберите категорию</MenuItem>
-              {categories.filter((c) => c.type === 'expense').map((c) => (
+              {categories.filter((c) => c.type.toLowerCase() === 'expense').map((c) => (
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </Select>
@@ -670,7 +678,7 @@ export default function Finance() {
               size="small" fullWidth displayEmpty
             >
               <MenuItem value="">Без категории</MenuItem>
-              {categories.filter((c) => c.type === editTx?.transaction_type).map((c) => (
+              {categories.filter((c) => c.type.toLowerCase() === (editTx?.transaction_type || '')).map((c) => (
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </Select>
@@ -691,8 +699,8 @@ export default function Finance() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={catDialog} onClose={() => setCatDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Управление категориями</DialogTitle>
+      <Dialog open={catDialog} onClose={() => { setCatDialog(false); setCatEditId(null); setCatForm({ name: '', type: 'expense', color: '#2563EB' }); }} maxWidth="sm" fullWidth>
+        <DialogTitle>{catEditId !== null ? 'Редактировать категорию' : 'Управление категориями'}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
             <Button size="small" variant={catFilter === 'all' ? 'contained' : 'outlined'} onClick={() => setCatFilter('all')}>Все</Button>
@@ -701,12 +709,15 @@ export default function Finance() {
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3, maxHeight: 240, overflow: 'auto' }}>
             {categories
-              .filter((c) => catFilter === 'all' || c.type === catFilter)
+              .filter((c) => catFilter === 'all' || c.type.toLowerCase() === catFilter)
               .map((c) => (
                 <Box key={c.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, borderRadius: 1, bgcolor: 'rgba(148,163,184,0.05)' }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: c.color || '#2563EB' }} />
                   <Typography variant="body2" sx={{ flex: 1 }}>{c.name}</Typography>
-                  <Chip label={c.type === 'income' ? 'Доход' : 'Расход'} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                  <Chip label={c.type.toLowerCase() === 'income' ? 'Доход' : 'Расход'} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                  <IconButton size="small" onClick={() => { setCatEditId(c.id); setCatForm({ name: c.name, type: c.type.toLowerCase() as 'income' | 'expense', color: c.color || '#2563EB' }); }} sx={{ p: 0.3 }}>
+                    <Edit fontSize="small" sx={{ fontSize: 14 }} />
+                  </IconButton>
                 </Box>
               ))}
             {categories.length === 0 && (
@@ -715,7 +726,7 @@ export default function Finance() {
               </Typography>
             )}
           </Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>Новая категория</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>{catEditId !== null ? 'Редактировать категорию' : 'Новая категория'}</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <TextField label="Название" size="small" value={catForm.name}
               onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} />
@@ -731,7 +742,7 @@ export default function Finance() {
               ))}
             </Box>
             <Button variant="contained" size="small" onClick={handleAddCategory} disabled={!catForm.name.trim()}>
-              Добавить
+              {catEditId !== null ? 'Сохранить' : 'Добавить'}
             </Button>
           </Box>
         </DialogContent>

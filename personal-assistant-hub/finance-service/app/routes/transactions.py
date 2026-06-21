@@ -5,12 +5,26 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 from app.database import get_db
-from app.models import Transaction, Account, TransactionType
+from app.models import Transaction, Account, Category, TransactionType
 from app.schemas import TransactionCreate, TransactionUpdate, TransactionResponse
 from app.cache import cache_invalidate
 from app.auth import get_current_user_id
 
 router = APIRouter(tags=["transactions"])
+
+
+async def _enrich_transaction(db: AsyncSession, txn: Transaction):
+    """Populate category_name, category_color, account_name on a Transaction ORM object."""
+    if txn.category_id:
+        cat = await db.get(Category, txn.category_id)
+        if cat:
+            txn.category_name = cat.name
+            txn.category_color = cat.color
+    if txn.account_id:
+        acc = await db.get(Account, txn.account_id)
+        if acc:
+            txn.account_name = acc.name
+    return txn
 
 
 async def apply_balance_change(
@@ -72,7 +86,10 @@ async def list_transactions(
     )
 
     result = await db.execute(query)
-    return result.scalars().all()
+    transactions = result.scalars().all()
+    for txn in transactions:
+        await _enrich_transaction(db, txn)
+    return transactions
 
 
 @router.post("/transactions", response_model=TransactionResponse, status_code=201)
@@ -88,7 +105,7 @@ async def create_transaction(
         amount=data.amount,
         description=data.description,
         transaction_type=data.transaction_type,
-        date=data.date,
+        date=data.transaction_date,
         is_recurring=data.is_recurring,
         recurring_day=data.recurring_day,
     )
@@ -99,6 +116,7 @@ async def create_transaction(
     await db.commit()
     await db.refresh(txn)
     await cache_invalidate(f"accounts:{user_id}")
+    await _enrich_transaction(db, txn)
     return txn
 
 
@@ -116,6 +134,7 @@ async def get_transaction(
     txn = result.scalar_one_or_none()
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    await _enrich_transaction(db, txn)
     return txn
 
 
@@ -138,7 +157,7 @@ async def update_transaction(
     # Reverse old balance effect
     await apply_balance_change(db, txn.account_id, user_id, txn.amount, txn.transaction_type, reverse=True)
 
-    update_data = data.model_dump(exclude_unset=True)
+    update_data = data.model_dump(exclude_unset=True, by_alias=True)
     for field, value in update_data.items():
         setattr(txn, field, value)
 
@@ -149,6 +168,7 @@ async def update_transaction(
     await db.commit()
     await db.refresh(txn)
     await cache_invalidate(f"accounts:{user_id}")
+    await _enrich_transaction(db, txn)
     return txn
 
 

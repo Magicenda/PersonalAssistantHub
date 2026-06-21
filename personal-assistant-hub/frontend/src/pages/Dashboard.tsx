@@ -26,6 +26,16 @@ import { financeApi, type FinanceReport } from '../api/finance';
 import { tasksApi, type Task, type Habit } from '../api/tasks';
 import { analyticsApi, type Insight } from '../api/analytics';
 
+function parseInsights(raw: unknown): Insight[] {
+  if (typeof raw === 'object' && raw !== null && 'insight' in raw) {
+    const text = (raw as { insight: string }).insight;
+    return text.split('\n').filter(Boolean).map((t: string, idx: number) => ({
+      id: idx, type: 'Аналитика', title: '', description: t, severity: 'info', created_at: new Date().toISOString(),
+    }));
+  }
+  return [];
+}
+
 const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const containerVariants = {
@@ -47,19 +57,24 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [pieData, setPieData] = useState<{ name: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       financeApi.getReports().catch(() => null),
+      financeApi.getCategoryBreakdown().catch(() => ({ data: [] })),
       tasksApi.getTasks().catch(() => ({ data: [] as Task[] }) as AxiosResponse<Task[]>),
       tasksApi.getHabits().catch(() => ({ data: [] as Habit[] }) as AxiosResponse<Habit[]>),
-      analyticsApi.getInsights().catch(() => ({ data: [] as Insight[] }) as AxiosResponse<Insight[]>),
-    ]).then(([r, t, h, i]) => {
+      analyticsApi.getInsights().catch(() => ({ data: { insight: '' } })),
+    ]).then(([r, cat, t, h, i]) => {
       if (r) setReport(r.data);
+      if (cat && cat.data) {
+        setPieData((cat.data as { category: string; amount: number }[]).map((c) => ({ name: c.category, value: Math.round(c.amount) })));
+      }
       setTasks(t.data || []);
       setHabits(h.data || []);
-      setInsights(i.data || []);
+      setInsights(parseInsights(i?.data));
       setLoading(false);
     });
   }, []);
@@ -78,8 +93,6 @@ export default function Dashboard() {
   const tasksCompleted = tasks.filter((t) => t.status === 'done').length;
   const tasksActive = tasks.filter((t) => t.status !== 'done').length;
   const maxStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.streak)) : 0;
-
-  const pieData: { name: string; value: number }[] = [];
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -278,10 +291,7 @@ export default function Dashboard() {
                   {insights.slice(0, 3).map((insight) => (
                     <Box key={insight.id} sx={{ mb: 1.5, '&:last-child': { mb: 0 } }}>
                       <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
-                        {insight.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {insight.description}
+                        {insight.description || insight.title}
                       </Typography>
                     </Box>
                   ))}

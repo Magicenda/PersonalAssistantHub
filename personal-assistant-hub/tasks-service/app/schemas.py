@@ -100,6 +100,7 @@ class HabitResponse(BaseModel):
     streak: Optional[int] = 0
     last_completed: Optional[datetime.datetime] = None
     color: Optional[str] = "#6366f1"
+    completed_dates: Optional[list[str]] = None
     created_at: Optional[datetime.datetime] = None
     updated_at: Optional[datetime.datetime] = None
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, func as sa_func
+from sqlalchemy import select, func as sa_func, cast as sa_cast, Date as sa_Date
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date, timedelta
 from decimal import Decimal
@@ -35,9 +35,10 @@ async def monthly_summary(
     for _ in range(months - 1):
         start = (start.replace(day=1) - timedelta(days=1)).replace(day=1)
 
+    month_col = sa_cast(sa_func.date_trunc('month', Transaction.date), sa_Date)
     result = await db.execute(
         select(
-            sa_func.to_char(Transaction.date, "YYYY-MM").label("month"),
+            month_col.label("month"),
             sa_func.coalesce(
                 sa_func.sum(Transaction.amount).filter(Transaction.transaction_type == TransactionType.INCOME), 0
             ).label("income"),
@@ -46,12 +47,12 @@ async def monthly_summary(
             ).label("expenses"),
         )
         .where(Transaction.user_id == user_id, Transaction.date >= start)
-        .group_by(sa_func.to_char(Transaction.date, "YYYY-MM"))
-        .order_by(sa_func.to_char(Transaction.date, "YYYY-MM"))
+        .group_by(month_col)
+        .order_by(month_col)
     )
     rows = result.all()
     data = [
-        MonthlySummaryResponse(month=r.month, income=r.income, expenses=r.expenses, net=r.income - r.expenses)
+        MonthlySummaryResponse(month=r.month.strftime('%Y-%m'), income=r.income, expenses=r.expenses, net=r.income - r.expenses)
         for r in rows
     ]
     await cache_set(cache_key, [d.model_dump() for d in data])
@@ -122,9 +123,10 @@ async def monthly_trends(
     for _ in range(months - 1):
         start = (start.replace(day=1) - timedelta(days=1)).replace(day=1)
 
+    month_col = sa_cast(sa_func.date_trunc('month', Transaction.date), sa_Date)
     result = await db.execute(
         select(
-            sa_func.to_char(Transaction.date, "YYYY-MM").label("month"),
+            month_col.label("month"),
             sa_func.coalesce(
                 sa_func.sum(Transaction.amount).filter(Transaction.transaction_type == TransactionType.INCOME), 0
             ).label("income"),
@@ -133,11 +135,11 @@ async def monthly_trends(
             ).label("expenses"),
         )
         .where(Transaction.user_id == user_id, Transaction.date >= start)
-        .group_by(sa_func.to_char(Transaction.date, "YYYY-MM"))
-        .order_by(sa_func.to_char(Transaction.date, "YYYY-MM"))
+        .group_by(month_col)
+        .order_by(month_col)
     )
     rows = result.all()
-    data = [MonthlyTrendItem(month=r.month, income=r.income, expenses=r.expenses) for r in rows]
+    data = [MonthlyTrendItem(month=r.month.strftime('%Y-%m'), income=r.income, expenses=r.expenses) for r in rows]
     await cache_set(cache_key, [d.model_dump() for d in data])
     return data
 

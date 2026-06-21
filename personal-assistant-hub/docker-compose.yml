@@ -32,6 +32,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      TZ: Europe/Moscow
       AUTH_SERVICE_URL: http://auth-service:8001
       FINANCE_SERVICE_URL: http://finance-service:8002
       TASKS_SERVICE_URL: http://tasks-service:8003
@@ -52,6 +53,7 @@ services:
     ports:
       - "8001:8001"
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
       JWT_ALGORITHM: HS256
@@ -70,6 +72,7 @@ services:
     ports:
       - "8002:8002"
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       REDIS_URL: redis://redis:6379/2
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
@@ -88,6 +91,7 @@ services:
     ports:
       - "8003:8003"
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       REDIS_URL: redis://redis:6379/3
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-super-secret-key-2024}
@@ -106,6 +110,7 @@ services:
     ports:
       - "8004:8004"
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       REDIS_URL: redis://redis:6379/4
       CELERY_BROKER_URL: redis://redis:6379/5
@@ -130,6 +135,7 @@ services:
     ports:
       - "8005:8005"
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       REDIS_URL: redis://redis:6379/6
       CELERY_BROKER_URL: redis://redis:6379/5
@@ -162,6 +168,7 @@ services:
       dockerfile: Dockerfile
     command: celery -A app.celery_app worker --loglevel=info
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       REDIS_URL: redis://redis:6379/6
       CELERY_BROKER_URL: redis://redis:6379/5
@@ -182,6 +189,7 @@ services:
       dockerfile: Dockerfile
     command: celery -A app.celery_app beat --loglevel=info
     environment:
+      TZ: Europe/Moscow
       DATABASE_URL: postgresql+asyncpg://app:app_secret_2024@postgres:5432/personal_assistant_hub
       REDIS_URL: redis://redis:6379/6
       CELERY_BROKER_URL: redis://redis:6379/5
